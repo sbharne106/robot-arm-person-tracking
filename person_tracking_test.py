@@ -14,19 +14,24 @@ PERSON_CLASS_ID = 15
 MODEL = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel"
 PROTOTXT = "mobilenet_ssd/MobileNetSSD_deploy.prototxt"
 
+# Load SSD MobileNet model
 net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
 
-cap = cv2.VideoCapture(0)
+# Force OpenCV to use V4L2 instead of GStreamer
+cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+
+# Safe camera settings
 cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 240)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 180)
 cap.set(cv2.CAP_PROP_FPS, 30)
 
 if not cap.isOpened():
     print("Could not open camera")
     exit()
 
-DEAD_ZONE = 15
+DEAD_ZONE = 25
+CONFIDENCE_THRESHOLD = 0.45
 
 prev_time = time.time()
 last_command = None
@@ -59,7 +64,7 @@ while True:
         confidence = detections[0, 0, i, 2]
         class_id = int(detections[0, 0, i, 1])
 
-        if class_id == PERSON_CLASS_ID and confidence > 0.5:
+        if class_id == PERSON_CLASS_ID and confidence > CONFIDENCE_THRESHOLD:
             if confidence > best_confidence:
                 best_confidence = confidence
                 box = detections[0, 0, i, 3:7] * [w, h, w, h]
@@ -69,9 +74,10 @@ while True:
         startX, startY, endX, endY = best_box
 
         person_center_x = (startX + endX) // 2
+        person_center_y = (startY + endY) // 2
         error_x = person_center_x - frame_center_x
 
-        # Direction labels are flipped to match your camera/arm perspective
+        # Direction is flipped to match your camera/arm perspective
         if error_x < -DEAD_ZONE:
             command = "RIGHT"
         elif error_x > DEAD_ZONE:
@@ -80,7 +86,7 @@ while True:
             command = "STOP"
 
         cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
-        cv2.circle(frame, (person_center_x, (startY + endY) // 2), 5, (0, 255, 0), -1)
+        cv2.circle(frame, (person_center_x, person_center_y), 5, (0, 255, 0), -1)
 
         cv2.putText(
             frame,
@@ -92,6 +98,7 @@ while True:
             2
         )
 
+    # Center line and dead zone lines
     cv2.line(frame, (frame_center_x, 0), (frame_center_x, h), (255, 0, 0), 2)
     cv2.line(frame, (frame_center_x - DEAD_ZONE, 0), (frame_center_x - DEAD_ZONE, h), (255, 255, 0), 1)
     cv2.line(frame, (frame_center_x + DEAD_ZONE, 0), (frame_center_x + DEAD_ZONE, h), (255, 255, 0), 1)
@@ -100,11 +107,25 @@ while True:
     fps = 1 / (current_time - prev_time)
     prev_time = current_time
 
-    cv2.putText(frame, f"Command: {command}", (10, 25),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+    cv2.putText(
+        frame,
+        f"Command: {command}",
+        (10, 25),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (0, 0, 255),
+        2
+    )
 
-    cv2.putText(frame, f"FPS: {fps:.2f}", (10, 50),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+    cv2.putText(
+        frame,
+        f"FPS: {fps:.2f}",
+        (10, 50),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.6,
+        (255, 0, 0),
+        2
+    )
 
     if command != last_command:
         print(command)
@@ -117,4 +138,3 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
-
