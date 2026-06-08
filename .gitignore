@@ -1,0 +1,24 @@
+# Python cache files
+__pycache__/
+*.pyc
+
+# Virtual environments
+ssd-env/
+ai-env/
+venv/
+.env/
+
+# Large model files
+*.caffemodel
+*.tflite
+*.pt
+*.onnx
+
+# System files
+.DS_Store
+
+# Test images/videos
+*.jpg
+*.png
+*.mp4
+*.avi
