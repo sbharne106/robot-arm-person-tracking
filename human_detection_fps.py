@@ -1,0 +1,139 @@
+import cv2
+import time
+
+# -----------------------------
+# MobileNet SSD class labels
+# -----------------------------
+CLASSES = [
+    "background", "aeroplane", "bicycle", "bird", "boat",
+    "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+    "dog", "horse", "motorbike", "person", "pottedplant",
+    "sheep", "sofa", "train", "tvmonitor"
+]
+
+PERSON_CLASS_ID = 15
+
+MODEL = "mobilenet_ssd/MobileNetSSD_deploy.caffemodel"
+PROTOTXT = "mobilenet_ssd/MobileNetSSD_deploy.prototxt"
+
+# Load AI model
+net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
+
+# -----------------------------
+# USB camera setup
+# -----------------------------
+cap = cv2.VideoCapture(0)
+
+if not cap.isOpened():
+    print("Camera did not open")
+    exit()
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+# -----------------------------
+# Detection settings
+# -----------------------------
+CONFIDENCE_THRESHOLD = 0.20
+
+prev_time = time.time()
+fps = 0
+
+print("Human detection started.")
+print("Press q to quit.")
+
+while True:
+    ret, frame = cap.read()
+
+    if not ret or frame is None:
+        print("Could not read camera frame")
+        break
+
+    h, w = frame.shape[:2]
+
+    # -----------------------------
+    # FPS calculation
+    # -----------------------------
+    current_time = time.time()
+    fps = 1 / (current_time - prev_time)
+    prev_time = current_time
+
+    # -----------------------------
+    # Run person detection
+    # -----------------------------
+    blob = cv2.dnn.blobFromImage(
+        cv2.resize(frame, (300, 300)),
+        0.007843,
+        (300, 300),
+        127.5
+    )
+
+    net.setInput(blob)
+    detections = net.forward()
+
+    person_count = 0
+
+    for i in range(detections.shape[2]):
+        confidence = float(detections[0, 0, i, 2])
+        class_id = int(detections[0, 0, i, 1])
+
+        # Only detect humans/persons
+        if class_id == PERSON_CLASS_ID and confidence > CONFIDENCE_THRESHOLD:
+            person_count += 1
+
+            box = detections[0, 0, i, 3:7] * [w, h, w, h]
+            startX, startY, endX, endY = box.astype("int")
+
+            startX = max(0, startX)
+            startY = max(0, startY)
+            endX = min(w - 1, endX)
+            endY = min(h - 1, endY)
+
+            cv2.rectangle(frame, (startX, startY), (endX, endY), (0, 255, 0), 2)
+
+            label = f"Human {confidence * 100:.1f}%"
+            cv2.putText(
+                frame,
+                label,
+                (startX, max(25, startY - 10)),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                2
+            )
+
+    # -----------------------------
+    # Display status and FPS
+    # -----------------------------
+    if person_count > 0:
+        status = f"Humans detected: {person_count}"
+    else:
+        status = "No human detected"
+
+    cv2.putText(
+        frame,
+        status,
+        (20, 40),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        1,
+        (0, 255, 255),
+        2
+    )
+
+    cv2.putText(
+        frame,
+        f"FPS: {fps:.1f}",
+        (20, 80),
+        cv2.FONT_HERSHEY_SIMPLEX,
+        0.8,
+        (0, 255, 255),
+        2
+    )
+
+    cv2.imshow("Human Detection with FPS", frame)
+
+    if cv2.waitKey(1) & 0xFF == ord("q"):
+        break
+
+cap.release()
+cv2.destroyAllWindows()

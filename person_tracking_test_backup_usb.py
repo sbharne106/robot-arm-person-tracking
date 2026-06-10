@@ -21,7 +21,7 @@ net = cv2.dnn.readNetFromCaffe(PROTOTXT, MODEL)
 cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
 
 # Safe camera settings
-#cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
 cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
 cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 cap.set(cv2.CAP_PROP_FPS, 30)
@@ -99,9 +99,9 @@ while True:
         )
 
     # Center line and dead zone lines
-    #cv2.line(frame, (frame_center_x, 0), (frame_center_x, h), (255, 0, 0), 2)
-    #cv2.line(frame, (frame_center_x - DEAD_ZONE, 0), (frame_center_x - DEAD_ZONE, h), (255, 255, 0), 1)
-    #cv2.line(frame, (frame_center_x + DEAD_ZONE, 0), (frame_center_x + DEAD_ZONE, h), (255, 255, 0), 1)
+    cv2.line(frame, (frame_center_x, 0), (frame_center_x, h), (255, 0, 0), 2)
+    cv2.line(frame, (frame_center_x - DEAD_ZONE, 0), (frame_center_x - DEAD_ZONE, h), (255, 255, 0), 1)
+    cv2.line(frame, (frame_center_x + DEAD_ZONE, 0), (frame_center_x + DEAD_ZONE, h), (255, 255, 0), 1)
 
     current_time = time.time()
     fps = 1 / (current_time - prev_time)
