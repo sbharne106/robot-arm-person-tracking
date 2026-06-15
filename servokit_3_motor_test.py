@@ -15,6 +15,7 @@ for channel in [BASE_CHANNEL, MOTOR_1_CHANNEL, MOTOR_2_CHANNEL]:
 
 print("Starting 3 motor/servo test")
 
+#set up
 # Move all to center
 print("Moving all to 90")
 kit.servo[BASE_CHANNEL].angle = 90

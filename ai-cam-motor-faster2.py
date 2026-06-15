@@ -90,9 +90,9 @@ SHOULDER_GAIN = 6.0
 ELBOW_GAIN = 8.0
 
 # Higher max step = motor physically moves faster
-BASE_MAX_STEP = 5.0
-SHOULDER_MAX_STEP = 2.5
-ELBOW_MAX_STEP = 4.0
+BASE_MAX_STEP = 14.0
+SHOULDER_MAX_STEP = 12.0
+ELBOW_MAX_STEP = 12.0
 
 # Direction signs
 BASE_TRACK_SIGN = -1
@@ -373,6 +373,7 @@ fps_start_time = time.time()
 try:
     while True:
         ret, frame = cap.read()
+        frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
 
         if not ret:
             print("Failed to read frame.")
